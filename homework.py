@@ -55,7 +55,7 @@ def main():
                     bot_client
                 )
             current_timestamp = new_homework.get('current_date')
-            time.sleep(300)
+            time.sleep(1200)
 
         except Exception as e:
             logging.exception(f'Бот столкнулся с ошибкой: {e}')
