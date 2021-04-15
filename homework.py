@@ -15,26 +15,42 @@ CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 
 def parse_homework_status(homework):
-    homework_name = homework['homework_name']
-    if homework['status'] == 'reviewing':
-        return 'Ваша работа взята в ревью'
+    status = homework.get('status')
+    if status is None:
+        return 'Бот не может найти домашку в ответе сервиса.'
 
-    if homework['status'] == 'rejected':
-        verdict = 'К сожалению в работе нашлись ошибки.'
-    else:
-        verdict = (
+    verdicts = {
+        'approved': (
             'Ревьюеру всё понравилось, можно приступать к следующему уроку.'
-        )
-    return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
+        ),
+        'reviewing': 'Ваша работа взята в ревью',
+        'rejected': 'К сожалению в работе нашлись ошибки.',
+    }
+    homework_name = homework.get('homework_name')
+
+    if status in verdicts.keys():
+        verdict = verdicts[status]
+        return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
+
+    else:
+        return 'Бот не узнаёт статус вашей работы.'
 
 
 def get_homework_statuses(current_timestamp):
-    homework_statuses = requests.get(
-        'https://praktikum.yandex.ru/api/user_api/homework_statuses/',
-        headers={'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'},
-        params={'from_date': current_timestamp}
-    )
-    return homework_statuses.json()
+    try:
+        homework_statuses = requests.get(
+            'https://praktikum.yandex.ru/api/user_api/homework_statuses/',
+            headers={'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'},
+            params={'from_date': current_timestamp}
+        )
+    except Exception as e:
+        logging.exception(f'Ошибка {e} при получении ответа на запрос')
+
+    try:
+        return homework_statuses.json()
+    except ValueError:
+        logging.exception('Формат ответа не совпадает с ожидаемым')
+        return {}
 
 
 def send_message(message, bot_client):
@@ -42,7 +58,10 @@ def send_message(message, bot_client):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(levelname)s: %(name)s: %(funcName)s: %(message)s'
+    )
     bot_client = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
 
@@ -54,8 +73,11 @@ def main():
                     new_homework.get('homeworks')[0]),
                     bot_client
                 )
-            current_timestamp = new_homework.get('current_date')
-            time.sleep(1200)
+            if new_homework.get('current_date'):
+                current_timestamp = new_homework.get('current_date')
+            else:
+                current_timestamp = int(time.time())
+            time.sleep(1190)
 
         except Exception as e:
             logging.exception(f'Бот столкнулся с ошибкой: {e}')
