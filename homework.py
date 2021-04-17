@@ -4,6 +4,7 @@ import time
 
 import requests
 import telegram
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,10 +16,6 @@ CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 
 def parse_homework_status(homework):
-    status = homework.get('status')
-    if status is None:
-        return 'Бот не может найти домашку в ответе сервиса.'
-
     verdicts = {
         'approved': (
             'Ревьюеру всё понравилось, можно приступать к следующему уроку.'
@@ -26,31 +23,48 @@ def parse_homework_status(homework):
         'reviewing': 'Ваша работа взята в ревью',
         'rejected': 'К сожалению в работе нашлись ошибки.',
     }
+    status = homework.get('status')
     homework_name = homework.get('homework_name')
 
-    if status in verdicts.keys():
+    if status is None or homework_name is None:
+        logging.exception(
+            f'Отсутствует статус или имя работы в ответе {homework}'
+        )
+        return f'В ответе сервера отсутствует статус или имя работы:\
+            статус: {status}, имя работы: {homework_name}'
+
+    try:
         verdict = verdicts[status]
         return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
 
-    else:
-        return 'Бот не узнаёт статус вашей работы.'
+    except KeyError:
+        logging.exception(
+            f'Ошибка статуса: {status} не входит в {verdicts.keys()}'
+        )
+    return (f'Бот не узнаёт статус {status} вашей работы.')
 
 
 def get_homework_statuses(current_timestamp):
+    if current_timestamp is None:
+        current_timestamp = int(time.time())
+
     try:
         homework_statuses = requests.get(
             'https://praktikum.yandex.ru/api/user_api/homework_statuses/',
             headers={'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'},
             params={'from_date': current_timestamp}
         )
+        return homework_statuses.json()
+
+    except ValueError:
+        logging.exception(
+            f'Возникла ошибка, текст полученного ответа:\
+                {homework_statuses.text}'
+        )
     except Exception as e:
         logging.exception(f'Ошибка {e} при получении ответа на запрос')
 
-    try:
-        return homework_statuses.json()
-    except ValueError:
-        logging.exception('Формат ответа не совпадает с ожидаемым')
-        return {}
+    return {}
 
 
 def send_message(message, bot_client):
@@ -73,11 +87,8 @@ def main():
                     new_homework.get('homeworks')[0]),
                     bot_client
                 )
-            if new_homework.get('current_date'):
-                current_timestamp = new_homework.get('current_date')
-            else:
-                current_timestamp = int(time.time())
-            time.sleep(1190)
+            current_timestamp = new_homework.get('current_date')
+            time.sleep(1000)
 
         except Exception as e:
             logging.exception(f'Бот столкнулся с ошибкой: {e}')
