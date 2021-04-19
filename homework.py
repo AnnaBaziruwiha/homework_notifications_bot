@@ -12,7 +12,7 @@ load_dotenv()
 
 PRAKTIKUM_TOKEN = os.getenv('PRAKTIKUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+CHAT_ID = os.getenv('CHAT_ID')
 
 
 def parse_homework_status(homework):
@@ -27,20 +27,20 @@ def parse_homework_status(homework):
     homework_name = homework.get('homework_name')
 
     if status is None or homework_name is None:
-        logging.exception(
+        logging.error(
             f'Отсутствует статус или имя работы в ответе {homework}'
         )
         return f'В ответе сервера отсутствует статус или имя работы:\
             статус: {status}, имя работы: {homework_name}'
 
-    try:
-        verdict = verdicts[status]
+    verdict = verdicts.get(status)
+    if verdict is not None:
         return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
-
-    except KeyError:
-        logging.exception(
+    else:
+        logging.error(
             f'Ошибка статуса: {status} не входит в {verdicts.keys()}'
         )
+
     return (f'Бот не узнаёт статус {status} вашей работы.')
 
 
@@ -52,7 +52,7 @@ def get_homework_statuses(current_timestamp):
         homework_statuses = requests.get(
             'https://praktikum.yandex.ru/api/user_api/homework_statuses/',
             headers={'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'},
-            params={'from_date': 1616122670}
+            params={'from_date': current_timestamp}
         )
         return homework_statuses.json()
 
@@ -61,10 +61,10 @@ def get_homework_statuses(current_timestamp):
             f'Возникла ошибка, текст полученного ответа:\
                 {homework_statuses.text}'
         )
+        return {}
     except Exception as e:
         logging.exception(f'Ошибка {e} при получении ответа на запрос')
-
-    return {}
+        return {}
 
 
 def send_message(message, bot_client):
