@@ -46,7 +46,7 @@ def parse_homework_status(homework):
 
 def get_homework_statuses(current_timestamp):
     if current_timestamp is None:
-        current_timestamp = int(time.time())
+        current_timestamp = int(time.time()) - 86400
 
     try:
         homework_statuses = requests.get(
