@@ -35,7 +35,7 @@ def parse_homework_status(homework):
 
     verdict = verdicts.get(status)
     if verdict is not None:
-        return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
+        return f'Изменился статус работы "{homework_name}"!\n\n{verdict}'
     else:
         logging.error(
             f'Ошибка статуса: {status} не входит в {verdicts.keys()}'
