@@ -24,7 +24,7 @@
 ### Контакты
 Еще больше моих проектов ищите [тут](https://github.com/AnnaBaziruwiha)
 
-Предложения и пожелания пишите [сюда](abaziruwiha@gmail.com)
+Предложения и пожелания пишите мне [в телеграм](https://t.me/a_bzrwh)
 
 Мой [linkedin](https://www.linkedin.com/in/annabaziruwiha/)
 
