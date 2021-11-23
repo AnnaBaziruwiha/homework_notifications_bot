@@ -16,6 +16,7 @@ CHAT_ID = os.getenv('CHAT_ID')
 
 
 def parse_homework_status(homework):
+    '''Извлекает статус работы из полученной информации'''
     verdicts = {
         'approved': (
             'Ревьюеру всё понравилось, можно приступать к следующему уроку.'
@@ -45,6 +46,7 @@ def parse_homework_status(homework):
 
 
 def get_homework_statuses(current_timestamp):
+    '''Делает запрос к единственному эндпойнту Практикум.Домашки'''
     if current_timestamp is None:
         current_timestamp = int(time.time()) - 86400
 
@@ -68,6 +70,7 @@ def get_homework_statuses(current_timestamp):
 
 
 def send_message(message, bot_client):
+    '''Отправляет сообщение в телеграм-чат'''
     return bot_client.send_message(chat_id=CHAT_ID, text=message)
 
 
